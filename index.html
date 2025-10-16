@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <title>Магазин в Telegram</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Обязательная библиотека Telegram Web Apps -->
-  <script src="https://telegram.orgweb-app.js</script>
+  <!-- Официальная библиотека Telegram Mini Apps -->
+  https://telegram.org/js/telegram-web-app.js</script>
   <style>
     :root { color-scheme: light dark; }
     body {
@@ -37,7 +37,9 @@
     <h1>Магазин</h1>
 
     <div class="card">
-      <img src="https://images.example.com/mug.jpg" alt="Кружка QA Life   <p class="title">Кружка «QA Life»</p>
+      <img src="https://images.examplepg
+      <div class="body">
+        <p class="title">Кружка «QA Life»</p>
         <p class="desc">Керамическая кружка 330 мл</p>
         <div class="actions">
           <button id="buy-mug">Купить за ⭐ 599</button>
@@ -48,67 +50,44 @@
   </div>
 
   <script>
-    // Инициализация Mini App UI
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand(); // растягиваем по высоте
+    tg.expand();
+
+    // ВСТАВЬТЕ СВОИ ДАННЫЕ из генератора:
+    // Можно использовать ПОЛНЫЙ URL (https://t.me/invoice/abcdef...) или просто slug 'abcdef...'
+    const INVOICE = {
+      coffee_mug: {
+        // пример: скопируйте из generate_invoice_links.py
+        url: "https://t.me/invoice/abcdefghi"
+        // либо: slug: "abcdefghi"
+      }
+    };
+
     const statusEl = document.getElementById('status');
     const buyBtn = document.getElementById('buy-mug');
 
-    async function createInvoiceAndPay(sku) {
-      statusEl.textContent = 'Создаю счет...';
-
-      // Рекомендуемый способ: передавать initData в заголовке Authorization: "tma <initData>"
-      // initData — это строка query-параметров, которую Telegram добавляет к Mini App. [5](https://docs.telegram-mini-apps.com/platform/init-data)
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `tma ${tg.initData}`
-      };
-
-      // Запрашиваем у нашего бекенда ссылку на счет (createInvoiceLink)
-      const resp = await fetch('/api/create_invoice', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ sku })
-      });
-
-      if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(`Ошибка API: ${resp.status} ${text}`);
-      }
-
-      const { invoice_url } = await resp.json();
-
-      // Открываем платежный экран внутри Telegram
-      // Можно передать как URL инвойса, так и «slug» — обе формы поддерживаются. [2](https://docs.telegram-mini-apps.com/packages/telegram-apps-sdk/2-x/components/invoice)
-      const result = await tg.openInvoice(invoice_url);
-
-      // result: 'paid' | 'cancelled' | 'failed' | 'pending' (в зависимости от платформы)
-      return result;
-    }
-
-    buyBtn.addEventListener('click', async () => {
-      buyBtn.disabled = true;
-      statusEl.textContent = '';
+    async function pay(invoice) {
+      statusEl.textContent = 'Открываю платёж…';
       try {
-        const status = await createInvoiceAndPay('coffee_mug');
+        const arg = invoice.url ?? invoice.slug; // URL или slug
+        const status = await tg.openInvoice(arg); // вернет 'paid' | 'cancelled' | 'failed' | 'pending'
         if (status === 'paid') {
           statusEl.textContent = '✅ Оплата прошла успешно! Спасибо!';
         } else if (status === 'cancelled') {
-          statusEl.textContent = '❕ Платеж отменен.';
+          statusEl.textContent = '❕ Платеж отменён.';
         } else if (status === 'failed') {
-          statusEl.textContent = '❌ Платеж не прошел.';
+          statusEl.textContent = '❌ Платеж не прошёл.';
         } else {
           statusEl.textContent = `Статус: ${status}`;
         }
       } catch (e) {
         console.error(e);
-        statusEl.textContent = '⚠️ Ошибка при оплате. Попробуйте еще раз.';
-      } finally {
-        buyBtn.disabled = false;
+        statusEl.textContent = '⚠️ Ошибка при оплате. Попробуйте ещё раз.';
       }
-    });
+    }
+
+    buyBtn.addEventListener('click', () => pay(INVOICE.coffee_mug));
   </script>
 </body>
 </html>
-``
