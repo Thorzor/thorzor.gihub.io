@@ -1,131 +1,136 @@
-const tgWebApp = window.Telegram.WebApp;
-
-// Настройка темы и поведения
-tgWebApp.ready();
-tgWebApp.expand();
-
-// Установка цвета заголовка и фона под тему Telegram
-tgWebApp.setHeaderColor(tgWebApp.themeParams.bg_color || '#ffffff');
-tgWebApp.setBackgroundColor(tgWebApp.themeParams.bg_color || '#f5f5f5');
-
-// Данные о пиццах (цены указаны в РУБЛЯХ, как обычно для пользователя)
-const pizzas = [
-    {
-        id: 1,
-        name: "Маргарита",
-        price: 499, // ⚠️ Это 499 рублей (целое число), НЕ копейки!
-        currency: "RUB",
-        image: "https://media.istockphoto.com/id/1168754685/ru/%D1%84%D0%BE%D1%82%D0%BE/%D0%BF%D0%B8%D1%86%D1%86%D0%B0-%D0%BC%D0%B0%D1%80%D0%B3%D0%B0%D1%80%D0%B8%D1%82%D0%B0-%D1%81-%D1%81%D1%8B%D1%80%D0%BE%D0%BC-%D0%B2%D0%B8%D0%B4-%D1%81%D0%B2%D0%B5%D1%80%D1%85%D1%83-%D0%B8%D0%B7%D0%BE%D0%BB%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D1%8B-%D0%BD%D0%B0-%D0%B1%D0%B5%D0%BB%D0%BE%D0%BC-%D1%84%D0%BE%D0%BD%D0%B5.jpg?s=612x612&w=0&k=20&c=2DI8tUW4BmtQKGNl81LzgfxUoXcsmsgk5I5jd1UypI8=",
-        description: "Классика: томаты, моцарелла, базилик"
-    },
-    {
-        id: 2,
-        name: "Пепперони",
-        price: 599,
-        currency: "RUB",
-        image: "https://www.shutterstock.com/image-photo/small-size-pizza-pepperoni-on-260nw-2039301926.jpg",
-        description: "Острая пепперони с сыром и томатным соусом"
-    },
-    {
-        id: 3,
-        name: "Гавайская",
-        price: 549,
-        currency: "RUB",
-        image: "https://www.shutterstock.com/image-photo/hawaiian-pizza-isolation-on-transparent-260nw-2618558339.jpg",
-        description: "Ветчина, ананасы, моцарелла"
-    },
-    {
-        id: 4,
-        name: "Четыре сыра",
-        price: 649,
-        currency: "RUB",
-        image: "https://roosters-pizza.ru/wa-data/public/shop/products/17/00/17/images/946/946.750x0.jpg",
-        description: "Моцарелла, дор-блю, пармезан, чеддер"
-    }
+// Каталог можно подтягивать с сервера; для наглядности берём статичный список.
+// Цены — в минимальных единицах (копейки/центы), как и в вашем боте.
+const CATALOG = [
+  {
+    id: "socks_classic_white",
+    title: "Носки Classic White",
+    description: "Хлопок 80%, лайкра 20%",
+    photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Socks_white.png/320px-Socks_white.png",
+    price: 990,
+    sizes: ["38-40","41-43","44-46"]
+  },
+  {
+    id: "socks_sport_black",
+    title: "Носки Sport Black",
+    description: "Дышащая вставка, усиленный мысок",
+    photo: "https://pizhon.by/assets/images/products/8497/prod/noski-chernyie.webp",
+    price: 1290,
+    sizes: ["38-40","41-43","44-46"]
+  },
+  {
+    id: "socks_funny_dots",
+    title: "Носки Funny Dots",
+    description: "Яркий принт, подарочная упаковка",
+    photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Socks_colored.png/320px-Socks_colored.png",
+    price: 1490,
+    sizes: ["36-38","39-41","42-44"]
+  }
 ];
 
-// Отображение пицц
-const container = document.getElementById('pizza-container');
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-pizzas.forEach(pizza => {
+const fmt = v => (v/100).toFixed(2);
+
+const cart = []; // {id,title,price,size,qty,photo}
+
+function renderCatalog() {
+  const root = document.getElementById('catalog');
+  root.innerHTML = '';
+  CATALOG.forEach(prod => {
     const card = document.createElement('div');
-    card.className = 'pizza-card';
-    // Очищаем цену от лишних пробелов и форматируем
-    const formattedPrice = new Intl.NumberFormat('ru-RU', {
-        style: 'currency',
-        currency: 'RUB',
-        minimumFractionDigits: 0
-    }).format(pizza.price);
+    card.className = 'card';
 
-    card.innerHTML = `
-        <img src="${pizza.image.trim()}" alt="${pizza.name}" onerror="this.style.display='none'">
-        <div class="pizza-name">${pizza.name}</div>
-        <div class="pizza-price">${formattedPrice}</div>
-        <div class="pizza-desc">${pizza.description}</div>
-    `;
+    const img = document.createElement('img');
+    img.src = prod.photo;
+    img.alt = prod.title;
 
-    card.addEventListener('click', () => {
-        buyPizza(pizza);
+    const right = document.createElement('div');
+
+    const h3 = document.createElement('h3'); h3.textContent = prod.title;
+    const p  = document.createElement('p');  p.textContent = prod.description + ` • ${fmt(prod.price)} BYN`;
+
+    // sizes
+    const sizesRow = document.createElement('div');
+    sizesRow.className = 'row';
+    let selectedSize = null;
+    prod.sizes.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'size';
+      b.textContent = s;
+      b.onclick = () => {
+        selectedSize = s;
+        [...sizesRow.children].forEach(c => c.classList.remove('active'));
+        b.classList.add('active');
+        addBtn.disabled = false;
+      };
+      sizesRow.appendChild(b);
     });
 
-    container.appendChild(card);
-});
+    // qty
+    const qtyRow = document.createElement('div');
+    qtyRow.className = 'row qty';
+    let qty = 1;
+    const minus = document.createElement('button'); minus.textContent = '−';
+    const plus  = document.createElement('button'); plus.textContent  = '+';
+    const qv    = document.createElement('span');   qv.textContent = String(qty);
+    minus.onclick = () => { qty = Math.max(1, qty-1); qv.textContent = String(qty); };
+    plus.onclick  = () => { qty += 1; qv.textContent = String(qty); };
+    qtyRow.append('Кол-во:', minus, qv, plus);
 
-// Функция покупки
-function buyPizza(pizza) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = "Открываем оплату...";
-    statusDiv.style.color = "#2980b9";
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add';
+    addBtn.textContent = 'Добавить';
+    addBtn.disabled = true;
+    addBtn.onclick = () => {
+      if (!selectedSize) return;
+      cart.push({
+        id: prod.id,
+        title: prod.title,
+        price: prod.price,
+        size: selectedSize,
+        qty,
+        photo: prod.photo
+      });
+      renderCart();
+      tg.HapticFeedback.impactOccurred("soft");
+    };
 
-    // 💡 ВАЖНО: price в рублях → умножаем на 100, чтобы получить копейки
-    const amountInCents = pizza.price * 100; // 499 руб → 49900 копеек
+    right.append(h3, p, sizesRow, qtyRow, addBtn);
 
-    try {
-        tgWebApp.openInvoice({
-            title: `Пицца "${pizza.name}"`,
-            description: pizza.description,
-            currency: pizza.currency, // "RUB"
-            prices: [
-                { label: "Стоимость", amount: amountInCents } // ✅ В копейках!
-            ],
-            payload: `order_pizza_${pizza.id}_${Date.now()}`
-        });
-    } catch (error) {
-        console.error("Ошибка открытия инвойса:", error);
-        statusDiv.textContent = "❌ Не удалось открыть оплату. Попробуйте позже.";
-        statusDiv.style.color = "#e74c3c";
-        return;
-    }
-
-    // Слушаем закрытие окна оплаты
-    tgWebApp.onEvent('invoiceClosed', onInvoiceClosed);
+    card.append(img, right);
+    root.appendChild(card);
+  });
 }
 
-// Обработка результата оплаты
-function onInvoiceClosed(data) {
-    const statusDiv = document.getElementById('status');
+function renderCart() {
+  const list = document.getElementById('cart-items');
+  list.innerHTML = '';
 
-    if (data.status === 'paid') {
-        statusDiv.textContent = '✅ Оплата прошла успешно! Спасибо за заказ!';
-        statusDiv.style.color = '#27ae60';
-    } else if (data.status === 'failed') {
-        statusDiv.textContent = '❌ Оплата не удалась. Попробуйте снова.';
-        statusDiv.style.color = '#e74c3c';
-    } else if (data.status === 'cancelled') {
-        statusDiv.textContent = 'ℹ️ Оплата отменена.';
-        statusDiv.style.color = '#f39c12';
-    }
+  let total = 0;
+  cart.forEach((item, idx) => {
+    const line = document.createElement('div');
+    line.className = 'line';
+    const left = document.createElement('div');
+    left.textContent = `${item.title} (${item.size}) x${item.qty}`;
+    const right = document.createElement('div');
+    right.textContent = `${fmt(item.price*item.qty)} BYN`;
+    line.append(left, right);
+    list.appendChild(line);
+    total += item.price*item.qty;
+  });
 
-    // Убираем обработчик после использования (во избежание дублирования)
-    tgWebApp.offEvent('invoiceClosed', onInvoiceClosed);
+  document.getElementById('total-price').textContent = fmt(total);
+  document.getElementById('checkout').disabled = cart.length === 0;
 }
 
-// Поддержка темной темы
-tgWebApp.onEvent('themeChanged', () => {
-    const bgColor = tgWebApp.themeParams.bg_color || (tgWebApp.colorScheme === 'dark' ? '#1e1e1e' : '#f5f5f5');
-    const textColor = tgWebApp.colorScheme === 'dark' ? '#ffffff' : '#333333';
+document.getElementById('checkout').onclick = () => {
+  const total = cart.reduce((s,i)=>s+i.price*i.qty, 0);
+  const payload = { cart, total };
+  // отправляем данные в чат боту
+  tg.sendData(JSON.stringify(payload));
+  tg.close();
+};
 
-    document.body.style.backgroundColor = bgColor;
-    document.body.style.color = textColor;
-    tgWebApp.setBackgroundColor(bgColor);
-});
+renderCatalog();
+renderCart();
