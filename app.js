@@ -68,18 +68,18 @@ pizzas.forEach(pizza => {
 // Функция покупки
 function buyPizza(pizza) {
     const statusDiv = document.getElementById('status');
-    statusDiv.textContent = 'Открываем оплату...';
+    statusDiv.textContent = "Открываем оплату...";
 
-    // Отправляем данные боту
-    tgWebApp.sendData(JSON.stringify({
-        action: 'buy_pizza',
-        pizza_id: pizza.id,
-        amount: pizza.price,
-        currency: pizza.currency,
+    // Открываем инвойс через openInvoice
+    tgWebApp.openInvoice({
         title: `Пицца "${pizza.name}"`,
         description: pizza.description,
+        currency: pizza.currency,
+        prices: [
+            { label: "Стоимость", amount: pizza.price * 100 } // ⚠️ В копейках/центах!
+        ],
         payload: `order_pizza_${pizza.id}_${Date.now()}`
-    }));
+    });
 
     // Слушаем закрытие окна оплаты
     tgWebApp.onEvent('invoiceClosed', onInvoiceClosed);
@@ -105,4 +105,5 @@ function onInvoiceClosed(payload) {
 tgWebApp.onEvent('themeChanged', () => {
     document.body.style.backgroundColor = tgWebApp.colorScheme === 'dark' ? '#1e1e1e' : '#f5f5f5';
     document.body.style.color = tgWebApp.colorScheme === 'dark' ? '#ffffff' : '#333333';
+
 });
