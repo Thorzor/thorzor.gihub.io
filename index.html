@@ -1,85 +1,31 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Меню пицц</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background:#fffaf0; color:#222; margin:0; padding:20px; }
-    h1 { text-align:center; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:20px; }
-    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
-    .card h3 { margin:0 0 8px 0; }
-    .card p { color:#555; margin:0 0 10px 0; }
-    .btn { display:inline-block; background:#28a745; color:#fff; border:none; border-radius:8px;
-           padding:10px 14px; cursor:pointer; font-size:15px; }
-    .note { margin-top:16px; text-align:center; color:#666; font-size:14px; }
-    #status { text-align:center; margin-bottom:10px; font-weight:bold; }
-  </style>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Socks Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <h1>🍕 Меню пицц</h1>
-  <div id="status">🔴 Не подключено к Telegram</div>
-  <div class="grid" id="menu"></div>
-  <div class="note">Оплата инициируется через Telegram.</div>
+<header>
+    <h1>🧦 Носки — каталог</h1>
+    <p>Выберите модели и размер, добавьте в корзину.</p>
+</header>
 
-  <script>
-    const PIZZAS = [
-      { id: "margherita", name: "Margherita", desc: "Томатный соус, моцарелла, базилик", price_rub: 450 },
-      { id: "pepperoni", name: "Pepperoni", desc: "Пепперони, моцарелла, томаты", price_rub: 550 },
-      { id: "four_cheese", name: "Four Cheese", desc: "4 сыра, сливочный соус", price_rub: 650 },
-      { id: "veggie", name: "Veggie", desc: "Овощи гриль, моцарелла, томатный соус", price_rub: 500 },
-    ];
+<main id="catalog"></main>
 
-    function isInTelegram() {
-      return typeof window.Telegram !== "undefined" && window.Telegram.WebApp;
-    }
+<section id="cart">
+    <h2>Корзина</h2>
+    <div id="cart-items"></div>
+    <div class="total">
+        <span>Итого:</span>
+        <strong id="total-price">0.00</strong>
+        <span class="currency">BYN</span>
+    </div>
+    <button id="checkout" disabled>Оформить</button>
+</section>
 
-    function updateStatus() {
-      const s = document.getElementById("status");
-      if (isInTelegram()) {
-        s.textContent = "🟢 Подключено к Telegram WebApp";
-        s.style.color = "green";
-        window.Telegram.WebApp.expand();
-      } else {
-        s.textContent = "🔴 Открыто вне Telegram (демо-режим)";
-        s.style.color = "red";
-      }
-    }
-
-    function renderMenu() {
-      const menu = document.getElementById("menu");
-      menu.innerHTML = "";
-      PIZZAS.forEach(p => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <h3>${p.name} — ${p.price_rub}₽</h3>
-          <p>${p.desc}</p>
-          <button class="btn" data-id="${p.id}">Купить</button>
-        `;
-        menu.appendChild(card);
-      });
-    }
-
-    document.addEventListener("click", e => {
-      const btn = e.target.closest(".btn");
-      if (!btn) return;
-      const pizza = PIZZAS.find(p => p.id === btn.dataset.id);
-      if (!pizza) return;
-
-      const data = { pizza_id: pizza.id, name: pizza.name, price_rub: pizza.price_rub };
-
-      if (isInTelegram()) {
-        window.Telegram.WebApp.sendData(JSON.stringify(data));
-        window.Telegram.WebApp.showAlert(`Запрос оплаты: ${pizza.name} (${pizza.price_rub}₽)`);
-      } else {
-        alert("⚠️ Эта страница не подключена к Telegram.\nОткрой её через кнопку бота /start.");
-      }
-    });
-
-    updateStatus();
-    renderMenu();
-  </script>
+<script src="app.js"></script>
 </body>
 </html>
