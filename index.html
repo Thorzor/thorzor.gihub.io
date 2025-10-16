@@ -1,37 +1,51 @@
-<!-- webapp.html -->
 <!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Меню пицц — Web App</title>
+  <title>Меню пицц</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background:#fffaf0; color:#222; }
+    body { font-family: system-ui, sans-serif; background:#fffaf0; color:#222; margin:0; padding:20px; }
     h1 { text-align:center; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:20px; }
-    .card { background:#fff; border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
     .card h3 { margin:0 0 8px 0; }
-    .card p { margin:0 0 12px 0; color:#555; }
-    .btn { display:inline-block; padding:10px 14px; border-radius:8px; background:#28a745; color:#fff; text-decoration:none; cursor:pointer; }
-    .note { margin-top:16px; color:#666; font-size:14px; text-align:center; }
+    .card p { color:#555; margin:0 0 10px 0; }
+    .btn { display:inline-block; background:#28a745; color:#fff; border:none; border-radius:8px;
+           padding:10px 14px; cursor:pointer; font-size:15px; }
+    .note { margin-top:16px; text-align:center; color:#666; font-size:14px; }
+    #status { text-align:center; margin-bottom:10px; font-weight:bold; }
   </style>
 </head>
 <body>
-  <h1>Выберите пиццу</h1>
-
-  <div id="app">
-    <div class="grid" id="menu"></div>
-    <div class="note">Оплата будет инициирована в чате Telegram.</div>
-  </div>
+  <h1>🍕 Меню пицц</h1>
+  <div id="status">🔴 Не подключено к Telegram</div>
+  <div class="grid" id="menu"></div>
+  <div class="note">Оплата инициируется через Telegram.</div>
 
   <script>
-    // Каталог пицц — должен совпадать с PIZZAS в bot.py
     const PIZZAS = [
       { id: "margherita", name: "Margherita", desc: "Томатный соус, моцарелла, базилик", price_rub: 450 },
       { id: "pepperoni", name: "Pepperoni", desc: "Пепперони, моцарелла, томаты", price_rub: 550 },
-      { id: "four_cheese", name: "Four Cheese", desc: "Моцарелла, пармезан, горгонзола, эмменталь", price_rub: 650 },
+      { id: "four_cheese", name: "Four Cheese", desc: "4 сыра, сливочный соус", price_rub: 650 },
       { id: "veggie", name: "Veggie", desc: "Овощи гриль, моцарелла, томатный соус", price_rub: 500 },
     ];
+
+    function isInTelegram() {
+      return typeof window.Telegram !== "undefined" && window.Telegram.WebApp;
+    }
+
+    function updateStatus() {
+      const s = document.getElementById("status");
+      if (isInTelegram()) {
+        s.textContent = "🟢 Подключено к Telegram WebApp";
+        s.style.color = "green";
+        window.Telegram.WebApp.expand();
+      } else {
+        s.textContent = "🔴 Открыто вне Telegram (демо-режим)";
+        s.style.color = "red";
+      }
+    }
 
     function renderMenu() {
       const menu = document.getElementById("menu");
@@ -42,55 +56,29 @@
         card.innerHTML = `
           <h3>${p.name} — ${p.price_rub}₽</h3>
           <p>${p.desc}</p>
-          <button class="btn" data-id="${p.id}" data-name="${p.name}" data-price="${p.price_rub}">Купить</button>
+          <button class="btn" data-id="${p.id}">Купить</button>
         `;
         menu.appendChild(card);
       });
     }
 
-    function isInTelegram() {
-      return !!window.Telegram && !!window.Telegram.WebApp;
-    }
-
-    function sendBuyRequest(pizza) {
-      const payload = {
-        action: "buy",
-        pizza_id: pizza.id,
-        name: pizza.name,
-        price_rub: pizza.price_rub
-      };
-      if (isInTelegram()) {
-        // Отправляем данные боту — придёт как message.web_app_data
-        try {
-          window.Telegram.WebApp.sendData(JSON.stringify(payload));
-          // Optionally show a small feedback inside Web App
-          window.Telegram.WebApp.showAlert(`Запрошена оплата: ${pizza.name} — ${pizza.price_rub}₽`);
-        } catch (err) {
-          console.error("Telegram.WebApp.sendData error:", err);
-          alert("Не удалось отправить данные в Telegram. Попробуйте ещё раз.");
-        }
-      } else {
-        // fallback: отправим POST к боту через fetch (требует публичный endpoint с телеграм-идентификацией).
-        // В локальной разработке вы можете отправить сюда запрос, если настроите сервер.
-        alert("Открывайте эту страницу из Telegram (внутри приложения). Для локальной отладки используйте ngrok и /start у бота.");
-      }
-    }
-
-    document.addEventListener("click", (e) => {
+    document.addEventListener("click", e => {
       const btn = e.target.closest(".btn");
       if (!btn) return;
-      const id = btn.dataset.id;
-      const pizza = PIZZAS.find(p => p.id === id);
-      if (pizza) sendBuyRequest(pizza);
+      const pizza = PIZZAS.find(p => p.id === btn.dataset.id);
+      if (!pizza) return;
+
+      const data = { pizza_id: pizza.id, name: pizza.name, price_rub: pizza.price_rub };
+
+      if (isInTelegram()) {
+        window.Telegram.WebApp.sendData(JSON.stringify(data));
+        window.Telegram.WebApp.showAlert(`Запрос оплаты: ${pizza.name} (${pizza.price_rub}₽)`);
+      } else {
+        alert("⚠️ Эта страница не подключена к Telegram.\nОткрой её через кнопку бота /start.");
+      }
     });
 
-    // Инициализация WebApp (если внутри Telegram)
-    if (isInTelegram()) {
-      window.Telegram.WebApp.expand(); // расширить web app при открытии
-      // Можно использовать initData для кастомизации (но не обязательно)
-      // const initData = window.Telegram.WebApp.initData || "";
-    }
-
+    updateStatus();
     renderMenu();
   </script>
 </body>
