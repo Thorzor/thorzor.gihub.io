@@ -1,36 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Выбор товара</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
-<h2>Выберите товар</h2>
-<select id="product">
-  <option value="product1">Товар 1 - 100₽</option>
-  <option value="product2">Товар 2 - 200₽</option>
-</select>
-<br><br>
-<button onclick="pay()">Оплатить</button>
+  <h2>Выберите товар</h2>
+  <select id="product">
+    <option value="product1">Товар 1 - 100₽</option>
+    <option value="product2">Товар 2 - 200₽</option>
+  </select>
+  <button id="payBtn">Оплатить</button>
 
-<script>
-async function pay() {
-    const product = document.getElementById('product').value;
-    // Отправка данных в бота через Telegram
-    const token = "ВАШ_БОТ_TOKEN"; 
-    const chat_id = "ВАШ_CHAT_ID"; 
-    
-    const message = `Новый заказ: ${product}`;
-    
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({chat_id, text: message})
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const productSelect = document.getElementById('product');
+    const payBtn = document.getElementById('payBtn');
+
+    payBtn.addEventListener('click', () => {
+      const selectedProduct = productSelect.value;
+      tg.sendData(selectedProduct);
     });
-    
-    alert("Данные отправлены в Telegram. Бот создаст инвойс.");
-}
-</script>
+  </script>
 </body>
 </html>
