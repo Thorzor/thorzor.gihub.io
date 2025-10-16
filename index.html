@@ -34,6 +34,11 @@
     const payBtn = document.getElementById('payBtn');
 
     payBtn.addEventListener('click', () => {
+    const selectedProduct = productSelect.value;
+    tg.sendData(JSON.stringify({ product: selectedProduct }));
+});
+
+    payBtn.addEventListener('click', () => {
       const selectedProduct = productSelect.value;
       tg.sendData(selectedProduct);
     });
