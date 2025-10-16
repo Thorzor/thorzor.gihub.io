@@ -1,31 +1,36 @@
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Socks Mini App</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles.css"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini App</title>
 </head>
 <body>
-<header>
-    <h1>🧦 Носки — каталог</h1>
-    <p>Выберите модели и размер, добавьте в корзину.</p>
-</header>
+<h2>Выберите товар</h2>
+<select id="product">
+  <option value="product1">Товар 1 - 100₽</option>
+  <option value="product2">Товар 2 - 200₽</option>
+</select>
+<br><br>
+<button onclick="pay()">Оплатить</button>
 
-<main id="catalog"></main>
-
-<section id="cart">
-    <h2>Корзина</h2>
-    <div id="cart-items"></div>
-    <div class="total">
-        <span>Итого:</span>
-        <strong id="total-price">0.00</strong>
-        <span class="currency">BYN</span>
-    </div>
-    <button id="checkout" disabled>Оформить</button>
-</section>
-
-<script src="app.js"></script>
+<script>
+async function pay() {
+    const product = document.getElementById('product').value;
+    // Отправка данных в бота через Telegram
+    const token = "ВАШ_БОТ_TOKEN"; 
+    const chat_id = "ВАШ_CHAT_ID"; 
+    
+    const message = `Новый заказ: ${product}`;
+    
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({chat_id, text: message})
+    });
+    
+    alert("Данные отправлены в Telegram. Бот создаст инвойс.");
+}
+</script>
 </body>
 </html>
